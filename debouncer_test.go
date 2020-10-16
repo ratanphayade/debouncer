@@ -33,7 +33,7 @@ func TestDebounce_Do(t *testing.T) {
 		d.TriggerAction(i)
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 	cancel()
 
 	assert.Equal(t, 1, counter)
