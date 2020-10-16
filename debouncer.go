@@ -61,9 +61,15 @@ func (d *Debouncer) debounce(ctx context.Context, action Action) {
 
 		// value holds the latest input received
 		value interface{}
-
-		timer = time.NewTimer(d.Interval)
 	)
+
+	// trigger the action post the interval duration specified
+	timer := time.AfterFunc(d.Interval, func() {
+		if hasEvent {
+			_ = action(ctx, value)
+			hasEvent = false
+		}
+	})
 
 	for {
 		select {
@@ -72,15 +78,19 @@ func (d *Debouncer) debounce(ctx context.Context, action Action) {
 		// to trigger the function once the timer ends
 		case value = <-d.Input:
 			hasEvent = true
-			timer.Reset(d.Interval)
 
-		// if the timer ends there is a valid event
-		// then call the Action provider
-		case <-timer.C:
-			if hasEvent {
-				_ = action(ctx, value)
-				hasEvent = false
+			// stop the previous timer
+			timer.Stop()
+
+			// drain the channel if there any event
+			// else just continue
+			select {
+			case <-timer.C:
+			default:
 			}
+
+			// reset the timer post draining the channel
+			timer.Reset(d.Interval)
 
 		// if the application is being terminated
 		// then stop the debouncing
